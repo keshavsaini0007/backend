@@ -450,7 +450,8 @@ CLOUDINARY_API_SECRET=your_api_secret
 | Question                                       | Answer                                                             |
 | ---------------------------------------------- | ------------------------------------------------------------------ |
 | What is Multer?                                | Express middleware for handling file uploads (multipart/form-data) |
-| Why use Cloudinary?                            | Cloud storage with CDN, easy transformations, scalability          |
+| Why use Cloudinary?                            | Cloud storage with CDN (Content Delivery Network),                 |
+|                                                | easy transformations, scalability                                  |
 | What is a Higher Order Function?               | Function that takes/returns another function                       |
 | How does file upload flow work?                | Client → Multer (local) → Cloudinary (cloud) → Save URL to DB      |
 | Why delete local file after Cloudinary upload? | Free up server storage space                                       |

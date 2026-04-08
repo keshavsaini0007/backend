@@ -7,6 +7,7 @@ import mongoose, { Schema } from 'mongoose';
 // stateless and stateful authentication is a way to authenticate users. In stateless authentication, the server does not store any information about the user, and the client sends all the necessary information in each request. In stateful authentication, the server stores information about the user, and the client only sends a token or session ID in each request.
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+
 const userSchema = new Schema({
     username: {
         type: String,
@@ -54,7 +55,9 @@ const userSchema = new Schema({
 );
 
 
+
 // NOTE: we have not used ()=>{} because in arrow function we don't have this keywords context
+// if passward changed then update it, otherwise move next.
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {
         return next();
@@ -64,11 +67,15 @@ userSchema.pre("save", async function (next) {
 });
 
 
+
+
 // custom method to compare password 
 
 userSchema.methods.isPasswordCorrect = async function (password) {
     return await bcrypt.compare(password, this.password);
 }
+
+
 
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
@@ -84,7 +91,6 @@ userSchema.methods.generateAccessToken = function () {
         }
     );
 }
-
 
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
@@ -102,5 +108,3 @@ userSchema.methods.generateRefreshToken = function () {
 }
 
 export const User = mongoose.model('User', userSchema);
-
-
