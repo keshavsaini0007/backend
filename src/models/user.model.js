@@ -108,3 +108,20 @@ userSchema.methods.generateRefreshToken = function () {
 }
 
 export const User = mongoose.model('User', userSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+// NOTE : 
+// Hashing is one‑way: you can’t get the original password back. For passwords, you store the hash and later compare hashes. Use slow, salted password hash algorithms like bcrypt, scrypt, or argon2.
+// Encryption is two‑way: you can decrypt if you have the key. It’s for data you need to read later (e.g., files, tokens, secrets), not for passwords.
+// So: passwords should be hashed, not encrypted.
