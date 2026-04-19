@@ -5,7 +5,7 @@ import mongoose, { Schema } from 'mongoose';
 // jwt token structure :>   (header).(information or payload).(signature)
 // usecase of jwt :> 1. user authentication 2. information exchange 3. stateless authentication
 // stateless and stateful authentication is a way to authenticate users. In stateless authentication, the server does not store any information about the user, and the client sends all the necessary information in each request. In stateful authentication, the server stores information about the user, and the client only sends a token or session ID in each request.
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 const userSchema = new Schema({
@@ -36,7 +36,6 @@ const userSchema = new Schema({
     },
     coverImage: {
         type: String,                    //cloudinary url
-        required: true
     },
     watchHistory: [
         {
@@ -58,12 +57,11 @@ const userSchema = new Schema({
 
 // NOTE: we have not used ()=>{} because in arrow function we don't have this keywords context
 // if passward changed then update it, otherwise move next.
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
     if (!this.isModified("password")) {
-        return next();
+        return;
     }
     this.password = await bcrypt.hash(this.password, 10);
-    next();
 });
 
 
