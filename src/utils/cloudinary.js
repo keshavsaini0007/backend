@@ -2,12 +2,19 @@ import { v2 as cloudinary } from 'cloudinary'
 import fs from 'fs'
 
 
-// this configuration allows us to upload files to cloudinary and get the url of the uploaded file
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-})
+const configureCloudinary = () => {
+    const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
+
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
+        throw new Error("Cloudinary credentials are missing in environment variables");
+    }
+
+    cloudinary.config({
+        cloud_name: CLOUDINARY_CLOUD_NAME,
+        api_key: CLOUDINARY_API_KEY,
+        api_secret: CLOUDINARY_API_SECRET,
+    });
+};
 
 
 const uploadOnCloudinary = async (localFilePath) => {
@@ -15,14 +22,22 @@ const uploadOnCloudinary = async (localFilePath) => {
         if(!localFilePath) {
             return null
         }
+
+        configureCloudinary();
+
         // Upload the file to Cloudinary
         const result = await cloudinary.uploader.upload(localFilePath, {resource_type: 'auto'})
         console.log("file is uploaded on cloudinary", result.url)
         return result
     }catch (error) {
-        fs.unlinkSync(localFilePath)// remove the file from local storage if there is an error while uploading to cloudinary
+        console.log("Error uploading file to Cloudinary:", error);
+
+        if (localFilePath && fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath)// remove the file from local storage if there is an error while uploading to cloudinary
+        }
+
         return null
     }
 }
 
-export default uploadOnCloudinary;
+export {uploadOnCloudinary};

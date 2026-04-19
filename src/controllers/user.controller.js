@@ -1,8 +1,8 @@
-import asyncHandler from '../utils/asyncHandler.js'
+import asyncHandler from '../utils/AsyncHandler.js'
 import ApiError from '../utils/ApiError.js'
 import Apiresponse from '../utils/ApiResponse.js'
-import { user } from '../models/user.model.js'
-import { cloudinaryUpload } from '../utils/cloudinary.js';
+import { User } from '../models/user.model.js'
+import { uploadOnCloudinary } from '../utils/cloudinary.js'
 
 const registerUser = asyncHandler(async (req, res) => {
     // get the data from the frontend
@@ -33,7 +33,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     // check if the user already exists in the database (using email or username)
-    const existingUser = await user.findOne({
+    const existingUser = await User.findOne({
         $or: [
             { email: email },
             { username: username }
@@ -46,7 +46,12 @@ const registerUser = asyncHandler(async (req, res) => {
 
     // checking for avatar and coverImage in the request
     const avatarLocalPath = req.files?.avatar?.[0]?.path;
-    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+    // const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+
+    let coverImageLocalPath ;
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+        coverImageLocalPath = req.files.coverImage[0].path;
+    }
     // if avatar is necessary
 
     if (!avatarLocalPath) {
@@ -55,26 +60,26 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
     // upload the avatar to cloudinary and get the url
-    const avatarUrl = await cloudinaryUpload(avatarLocalPath);
-    const coverImageUrl = await cloudinaryUpload(coverImageLocalPath);
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
 
-    if (!avatarUrl) {
+    if (!avatar) {
         throw new ApiError(500, "Failed to upload avatar");
     }
 
     // create the user in the database
-    const newUser = await user.create({
-        fullname,
+    const newUser = await User.create({
+        fullName: fullname,
         username: username.toLowerCase(),
         email,
         password,
         avatar: avatar.url,
-        coverImage: coverImage?.url || ""
+        coverImage: coverImage?.url || "",
     });
 
     //NOTE: mongodb creates a unique _id for each document, so we can use that as the user id
-    const createdUser = await user.findById(newUser._id).select("-password -refreshToken");
+    const createdUser = await User.findById(newUser._id).select("-password -refreshToken");
     // 
     if (!createdUser) throw new ApiError(500, "something went wrong while creating the user");
 
