@@ -19,25 +19,26 @@ const configureCloudinary = () => {
 
 const uploadOnCloudinary = async (localFilePath) => {
     try {
-        if(!localFilePath) {
+        if (!localFilePath) {
             return null
         }
 
         configureCloudinary();
 
         // Upload the file to Cloudinary
-        const result = await cloudinary.uploader.upload(localFilePath, {resource_type: 'auto'})
+        const result = await cloudinary.uploader.upload(localFilePath, { resource_type: 'auto' })
         console.log("file is uploaded on cloudinary", result.url)
         return result
-    }catch (error) {
+    } catch (error) {
         console.log("Error uploading file to Cloudinary:", error);
-
-        if (localFilePath && fs.existsSync(localFilePath)) {
-            fs.unlinkSync(localFilePath)// remove the file from local storage if there is an error while uploading to cloudinary
-        }
 
         return null
     }
+    finally {
+        if (localFilePath && fs.existsSync(localFilePath)) {
+            fs.unlinkSync(localFilePath)// remove the file from local storage if there is an error while uploading to cloudinary
+        }
+    }
 }
 
-export {uploadOnCloudinary};
+export { uploadOnCloudinary };
