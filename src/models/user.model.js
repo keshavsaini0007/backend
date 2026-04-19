@@ -75,6 +75,9 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 
 
 
+// In short it will execute when we call generateAccessToken or generateRefreshToken method on user instance and it will return the token with the payload and secret key and expiry time.
+
+
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
