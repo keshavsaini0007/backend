@@ -3,25 +3,41 @@ import ApiError from '../utils/ApiError.js'
 import Apiresponse from '../utils/ApiResponse.js'
 import { User } from '../models/user.model.js'
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import mongoose from 'mongoose'
 import ApiResponse from '../utils/ApiResponse.js'
 
-const generateAccessAndRefreshTokens = async (userId) => {
-    // generate access token and refresh token using the user id
-    // return the access token and refresh token
+// const generateAccessAndRefreshTokens = async (userId) => {
+//     // generate access token and refresh token using the user id
+//     // return the access token and refresh token
 
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new ApiError(404, "User not found during token generation");
-    }
+//     const user = await User.findById(userId);
+//     if (!user) {
+//         throw new ApiError(404, "User not found during token generation");
+//     }
+//     try {
+//         const accessToken = await user.generateAccessToken();
+//         const refreshToken = await user.generateRefreshToken();
+
+//         user.refreshToken = refreshToken;
+//         // schema validations is not required
+//         await user.save({ validateBeforeSave: false });
+
+//         return { accessToken, refreshToken };
+//     } catch (error) {
+//         throw new ApiError(500, "Something went wrong while generating referesh and access token")
+//     }
+// }
+
+const generateAccessAndRefreshTokens = async(userId) =>{
     try {
-        const accessToken = await user.generateAccessToken();
-        const refreshToken = await user.generateRefreshToken();
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
 
-        user.refreshToken = refreshToken;
-        // schema validations is not required
-        await user.save({ validateBeforeSave: false });
+        user.refreshToken = refreshToken
+        await user.save({ validateBeforeSave: false })
 
-        return { accessToken, refreshToken };
+        return {accessToken, refreshToken}
     } catch (error) {
         throw new ApiError(500, "Something went wrong while generating referesh and access token")
     }
@@ -204,7 +220,7 @@ const loginUser = asyncHandler(async (req, res) =>{
     throw new ApiError(401, "Invalid user credentials")
     }
 
-   const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
+   const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
