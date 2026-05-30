@@ -258,7 +258,7 @@ const logoutUser = asyncHandler(async (req, res) => {
             refreshToken: undefined
         },
         {
-            new: true
+            new: true // return the updated document after the update is applied
         }
     )
 
@@ -288,45 +288,45 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "invalid refresh Token")
     }
 
-    try{
+    try {
         const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    console.log(decodedToken.id)
-    const user = await User.findById(decodedToken?.id);
+        console.log(decodedToken.id)
+        const user = await User.findById(decodedToken?.id);
 
-    if (!user) {
-        throw new ApiError(
-            401,
-            "invalid refresh token"
-        )
-    }
-
-    if (incomingRefreshToken !== user.refreshToken) {
-        throw new ApiError(401, "invalid refresh token")
-    }
-
-    const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-    const options = {
-        httpOnly: true,
-        secure: true
-    }
-
-    return res
-        .status(200)
-        .cookie("refreshToken", newRefreshToken, options)
-        .cookie("accessToken", accessToken, options)
-        .json(
-            new ApiResponse(
-                200,
-                {
-                    refreshToken: newRefreshToken,
-                    accessToken
-                },
-                "Access token refreshed"
+        if (!user) {
+            throw new ApiError(
+                401,
+                "invalid refresh token"
             )
-        )
-    } catch(error){
+        }
+
+        if (incomingRefreshToken !== user.refreshToken) {
+            throw new ApiError(401, "invalid refresh token")
+        }
+
+        const { accessToken, newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+
+        return res
+            .status(200)
+            .cookie("refreshToken", newRefreshToken, options)
+            .cookie("accessToken", accessToken, options)
+            .json(
+                new ApiResponse(
+                    200,
+                    {
+                        refreshToken: newRefreshToken,
+                        accessToken
+                    },
+                    "Access token refreshed"
+                )
+            )
+    } catch (error) {
         throw new ApiError(
             401,
             error?.message || "invalid refresh token"
@@ -334,4 +334,60 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
-export { registerUser, loginUser, logoutUser , refreshAccessToken}
+const changePassword = asyncHandler(async (req, res) => {
+    // get the user id from the req.user object (set by the verifyJWT middleware)
+    // get the old password and new password from the req.body
+    // find the user in the database and compare the old password with the hashed password in the database
+    // if the old password is incorrect, send an error response
+    // if the old password is correct, hash the new password and update the user's password in the database
+    // send a success response to the frontend
+
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+        throw new ApiError(400, "old password and new password are required")
+    }
+
+    const user = await User.findById(req.user?._id);
+
+    if (!user) {
+        throw new ApiError(404, "User not found")
+    }
+
+    const isOldPasswordValid = await user.isPasswordCorrect(oldPassword);
+    if (!isOldPasswordValid) {
+        throw new ApiError(401, "Invalid old password")
+    }
+
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                {},
+                "Password changed successfully"
+            )
+        )
+
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    // get the user id from the req.user object (set by the verifyJWT middleware)
+    // find the user in the database and send the user data to the frontend
+    if(!req.user) {
+        throw new ApiError(404, "User not found")
+    }
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { user: req.user },
+                "Current user fetched successfully"
+            )
+        )
+})
+export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser }
