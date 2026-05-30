@@ -6,28 +6,6 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import mongoose from 'mongoose'
 import ApiResponse from '../utils/ApiResponse.js'
 
-// const generateAccessAndRefreshTokens = async (userId) => {
-//     // generate access token and refresh token using the user id
-//     // return the access token and refresh token
-
-//     const user = await User.findById(userId);
-//     if (!user) {
-//         throw new ApiError(404, "User not found during token generation");
-//     }
-//     try {
-//         const accessToken = await user.generateAccessToken();
-//         const refreshToken = await user.generateRefreshToken();
-
-//         user.refreshToken = refreshToken;
-//         // schema validations is not required
-//         await user.save({ validateBeforeSave: false });
-
-//         return { accessToken, refreshToken };
-//     } catch (error) {
-//         throw new ApiError(500, "Something went wrong while generating referesh and access token")
-//     }
-// }
-
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
@@ -130,60 +108,6 @@ const registerUser = asyncHandler(async (req, res) => {
         )
     )
 })
-
-// const loginUser = asyncHandler(async (req, res) => {
-//     // get the data from the frontend
-//     // validate the data (Non-empty)
-//     // check if the user exists in the database (using email or username)
-//     // if user does not exist, send an error response
-//     // if user exists, compare the password with the hashed password in the database
-//     // if password is incorrect, send an error response
-//     // if password is correct, generate a JWT token and send it to the frontend
-
-//     const { email, username, password } = req.body;
-
-//     if (!username && !email) {
-//         throw new ApiError(400, "username or email is required")
-//     }
-
-//     const user = await User.findOne({
-//         $or: [
-//             { email: email },
-//             { username: username }
-//         ]
-//     })
-
-//     if (!user) {
-//         throw new ApiError(404, "User does not exist");
-//     }
-
-//     const isPasswordValid = await user.isPasswordCorrect(password)
-
-//     if (!isPasswordValid) {
-//         throw new ApiError(401, "Invalid user credentials");
-//     }
-
-//     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-//     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
-
-//     const options = {
-//         httpOnly: true,
-//         secure: true,
-//     }
-
-//     return res
-//         .status(200)
-//         .cookie("refreshToken", refreshToken, options)
-//         .cookie("accessToken", accessToken, options)
-//         .json(
-//             new Apiresponse(
-//                 200,
-//                 { user: loggedInUser, accessToken, refreshToken },
-//                 "User logged in successfully"
-//             )
-//         );
-// })
 
 const loginUser = asyncHandler(async (req, res) => {
     // req body -> data
