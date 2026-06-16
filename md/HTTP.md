@@ -1,6 +1,6 @@
 # 🌐 HTTP Crash Course Notes
 
----
+----
 
 ## 📌 What are HTTP Headers?
 
