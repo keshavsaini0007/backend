@@ -6,28 +6,6 @@ import { uploadOnCloudinary } from '../utils/cloudinary.js'
 import mongoose from 'mongoose'
 import ApiResponse from '../utils/ApiResponse.js'
 
-// const generateAccessAndRefreshTokens = async (userId) => {
-//     // generate access token and refresh token using the user id
-//     // return the access token and refresh token
-
-//     const user = await User.findById(userId);
-//     if (!user) {
-//         throw new ApiError(404, "User not found during token generation");
-//     }
-//     try {
-//         const accessToken = await user.generateAccessToken();
-//         const refreshToken = await user.generateRefreshToken();
-
-//         user.refreshToken = refreshToken;
-//         // schema validations is not required
-//         await user.save({ validateBeforeSave: false });
-
-//         return { accessToken, refreshToken };
-//     } catch (error) {
-//         throw new ApiError(500, "Something went wrong while generating referesh and access token")
-//     }
-// }
-
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
@@ -131,60 +109,6 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 })
 
-// const loginUser = asyncHandler(async (req, res) => {
-//     // get the data from the frontend
-//     // validate the data (Non-empty)
-//     // check if the user exists in the database (using email or username)
-//     // if user does not exist, send an error response
-//     // if user exists, compare the password with the hashed password in the database
-//     // if password is incorrect, send an error response
-//     // if password is correct, generate a JWT token and send it to the frontend
-
-//     const { email, username, password } = req.body;
-
-//     if (!username && !email) {
-//         throw new ApiError(400, "username or email is required")
-//     }
-
-//     const user = await User.findOne({
-//         $or: [
-//             { email: email },
-//             { username: username }
-//         ]
-//     })
-
-//     if (!user) {
-//         throw new ApiError(404, "User does not exist");
-//     }
-
-//     const isPasswordValid = await user.isPasswordCorrect(password)
-
-//     if (!isPasswordValid) {
-//         throw new ApiError(401, "Invalid user credentials");
-//     }
-
-//     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-//     const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
-
-//     const options = {
-//         httpOnly: true,
-//         secure: true,
-//     }
-
-//     return res
-//         .status(200)
-//         .cookie("refreshToken", refreshToken, options)
-//         .cookie("accessToken", accessToken, options)
-//         .json(
-//             new Apiresponse(
-//                 200,
-//                 { user: loggedInUser, accessToken, refreshToken },
-//                 "User logged in successfully"
-//             )
-//         );
-// })
-
 const loginUser = asyncHandler(async (req, res) => {
     // req body -> data
     // username or email
@@ -244,7 +168,6 @@ const loginUser = asyncHandler(async (req, res) => {
         )
 
 })
-
 
 const logoutUser = asyncHandler(async (req, res) => {
     // get the user id from the req.user object (set by the verifyJWT middleware)
@@ -377,7 +300,7 @@ const changePassword = asyncHandler(async (req, res) => {
 const getCurrentUser = asyncHandler(async (req, res) => {
     // get the user id from the req.user object (set by the verifyJWT middleware)
     // find the user in the database and send the user data to the frontend
-    if(!req.user) {
+    if (!req.user) {
         throw new ApiError(404, "User not found")
     }
     return res
@@ -390,4 +313,154 @@ const getCurrentUser = asyncHandler(async (req, res) => {
             )
         )
 })
-export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser }
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const { fullName, email } = req.body
+
+    if (!fullName || !email) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                email: email
+            }
+        },
+        { new: true }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(new ApiResponse(
+            200,
+            user,
+            "Account details updated successfully"
+        ))
+})
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+    const avatarLocalPath = req.file?.path;
+
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing");
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+    if (!avatar.url) {
+        throw new ApiError(500, "Error Avatar file is not uploaded")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                avatar: avatar.url
+            }
+        },
+        { new: true }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "Avatar updated successfully"
+            )
+        )
+
+})
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+    const coverImageLocalPath = req.file?.path;
+
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Cover image file is missing");
+    }
+
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+    if (!coverImage.url) {
+        throw new ApiError(500, "Error Cover image file is not uploaded")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                coverImage: coverImage.url
+            }
+        },
+        { new: true }
+    ).select("-password")
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                user,
+                "Cover image updated successfully"
+            )
+        )
+
+})
+
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    // from Url we will get the username of the user whose channel profile we want to fetch
+    const { username } = req.params;
+
+    await User.aggregate([
+        {
+            $match: {
+                usename: username
+            }
+        },
+        {
+            $lookup: {
+                // from the subscriptions collection, find all the documents where the channel field matches the _id of the user and create an array of subscribers for that user
+                // we are doing this to get the number of subscribers for that user
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                // from the subscriptions collection, find all the documents where the subscriber field matches the _id of the user and create an array of subscribedTo for that user
+                // we are doing this to get the number of channels that user is subscribed to
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            },
+
+        },
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                subscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    if : { $in:  [req.user?._id , "$subscribers.subscriber"] },
+                    then : true,
+                    else : false
+                }
+            }
+        }
+
+    ])
+
+})
+
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage, getUserChannelProfile }
