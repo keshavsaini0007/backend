@@ -344,27 +344,27 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
 
-        if (!avatarLocalPath) {
-            throw new ApiError(400, "Avatar file is missing");
-        }
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is missing");
+    }
 
-        const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-        if (!avatar.url) {  
-            throw new ApiError(500,"Error Avatar file is not uploaded")
-        }
+    if (!avatar.url) {
+        throw new ApiError(500, "Error Avatar file is not uploaded")
+    }
 
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            {
-                $set : {
-                    avatar : avatar.url
-                }
-            },
-            {new : true}
-        ).select("-password")
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                avatar: avatar.url
+            }
+        },
+        { new: true }
+    ).select("-password")
 
-        return res
+    return res
         .status(200)
         .json(
             new ApiResponse(
@@ -379,27 +379,27 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path;
 
-        if (!coverImageLocalPath) {
-            throw new ApiError(400, "Cover image file is missing");
-        }
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Cover image file is missing");
+    }
 
-        const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-        if (!coverImage.url) {  
-            throw new ApiError(500,"Error Cover image file is not uploaded")
-        }
+    if (!coverImage.url) {
+        throw new ApiError(500, "Error Cover image file is not uploaded")
+    }
 
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            {
-                $set : {
-                    coverImage : coverImage.url
-                }
-            },
-            {new : true}
-        ).select("-password")
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                coverImage: coverImage.url
+            }
+        },
+        { new: true }
+    ).select("-password")
 
-        return res
+    return res
         .status(200)
         .json(
             new ApiResponse(
@@ -411,5 +411,56 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 })
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+    // from Url we will get the username of the user whose channel profile we want to fetch
+    const { username } = req.params;
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage }
+    await User.aggregate([
+        {
+            $match: {
+                usename: username
+            }
+        },
+        {
+            $lookup: {
+                // from the subscriptions collection, find all the documents where the channel field matches the _id of the user and create an array of subscribers for that user
+                // we are doing this to get the number of subscribers for that user
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                // from the subscriptions collection, find all the documents where the subscriber field matches the _id of the user and create an array of subscribedTo for that user
+                // we are doing this to get the number of channels that user is subscribed to
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            },
+
+        },
+        {
+            $addFields: {
+                subscribersCount: {
+                    $size: "$subscribers"
+                },
+                subscribedToCount: {
+                    $size: "$subscribedTo"
+                },
+                isSubscribed: {
+                    if : { $in:  [req.user?._id , "$subscribers.subscriber"] },
+                    then : true,
+                    else : false
+                }
+            }
+        }
+
+    ])
+
+})
+
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getCurrentUser, updateAccountDetails, updateUserAvatar, updateUserCoverImage, getUserChannelProfile }
