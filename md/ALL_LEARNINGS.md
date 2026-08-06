@@ -408,6 +408,24 @@ router.route("/refresh-token").post(refreshAccessToken);
 
 **How middlewares chain:** `router.post(path, middleware1, middleware2, handler)` — each runs in order, then `next()` moves to the next one.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 **Complete endpoint list:**
 | Method | URL | Middleware | Controller | Auth? |
 |---|---|---|---|---|
